@@ -1,3 +1,4 @@
 zhwiki/
 *.txt
+*.csv
 .ipynb_checkpoints/
