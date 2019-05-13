@@ -1,4 +1,15 @@
 zhwiki/
+ltp_data_v3.4.0/
+
+.ipynb_checkpoints/
+
+.idea/
+
+test.ipynb
+
 *.txt
 *.csv
-.ipynb_checkpoints/
+*.otf
+*.pickle
+*.xml
+*.iml
