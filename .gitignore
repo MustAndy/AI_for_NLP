@@ -4,9 +4,9 @@ ltp_data_v3.4.0/
 .ipynb_checkpoints/
 
 .idea/
-
+Untitled.ipynb
 test.ipynb
-
+*.model
 *.txt
 *.csv
 *.otf
