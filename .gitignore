@@ -2,7 +2,7 @@ zhwiki/
 ltp_data_v3.4.0/
 
 .ipynb_checkpoints/
-
+Assi8/Assi8.py
 .idea/
 Untitled.ipynb
 test.ipynb
@@ -13,3 +13,4 @@ test.ipynb
 *.pickle
 *.xml
 *.iml
+*.npy
