@@ -10,5 +10,6 @@ Assignment repository of NLP course.
 | ASSI-5 | Project-1             |
 | ASSI-6 | Done              |
 | ASSI-7 | Done              |
-| ASSI-8 | Working              |
+| ASSI 8-9 | Done              |
+
 | Project-1 | Working               |
