@@ -1,14 +1,40 @@
-from gensim.models import Word2Vec
-from gensim.models.word2vec import LineSentence
-import re
-import jieba
-import pandas as pd
-import os
-def cut(string): return ' '.join(jieba.cut(string))
-DATA_PATH = 'd:/senior/aiCourse/dataSource/'
+def Find(self, target, array):
+    # write code here
+    i = -1
+    for item in array:
+        if target > item[0]:
+            i += 1
+        else:
+            break
+    if i == -1:
+        return False
+
+    for item in array[i]:
+        if target == item:
+            return True
+
+            return False
 
 
-MODEL_PATH = os.path.join(DATA_PATH,'w2vmodel/wiki_news_cutting.model')
-all_word2vec = Word2Vec.load(MODEL_PATH)
-print(all_word2vec.similar_by_word('说'))
+def Fibonacci(n):
+    f = 0
+    g = 1
 
+    while n>=0:
+
+        g = f + g
+        f = g - f
+        n = n - 1
+    return f;
+
+
+
+def fun(x) :
+    countx = 0;
+    while x>0:
+        countx+=1;
+        x = (x & (x - 1))
+
+    return countx;
+
+print(fun(500))
