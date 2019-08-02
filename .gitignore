@@ -14,3 +14,4 @@ test.ipynb
 *.xml
 *.iml
 *.npy
+!requirements.txt
