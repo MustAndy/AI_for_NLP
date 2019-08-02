@@ -1,0 +1,43 @@
+{% extends "main.html" %}
+
+{% block title %}首页{% endblock %}
+
+{% block page_content %}
+
+<h2>结果</h2>
+<div class="table-responsive">
+    <table class="table table-striped table-hover table-bordered">
+        <thead>
+        <tr>
+            <th width="10%">人物</th>
+            <th width="15%">动词</th>
+            <th width="75%">言论</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for row in result %}
+        <tr>
+            {% set rowloop = loop %}
+            {% for cell in row %}
+            <td>{{ cell }}</td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+</div>
+
+<h2>图像</h2>
+<p>词云展示：</p>
+<img src="data:;base64,{{ img_stream }}"
+     class="img-responsive " alt="Cinque Terre" width="304" height="236">
+
+<h2>图标</h2>
+<p>插入图标:</p>
+<p>云图标: <span class="glyphicon glyphicon-cloud"></span></p>
+<p>信件图标: <span class="glyphicon glyphicon-envelope"></span></p>
+<p>搜索图标: <span class="glyphicon glyphicon-search"></span></p>
+<p>打印图标: <span class="glyphicon glyphicon-print"></span></p>
+<p>下载图标：<span class="glyphicon glyphicon-download"></span></p>
+{% endblock %}
