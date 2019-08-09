@@ -1,16 +1,25 @@
-from keras.layers import Dense, Dropout, Embedding, LSTM, Bidirectional, Layer
-from keras.layers import concatenate, GlobalMaxPooling1D, GlobalAveragePooling1D, SpatialDropout1D, Embedding, Input, Dense, LSTM, GRU, Bidirectional, TimeDistributed
-from keras.datasets import imdb
-from keras.models import Sequential
-from keras.preprocessing import sequence
-from sklearn.metrics import roc_auc_score
-import keras.layers as layers
-from keras.models import Model
-from keras import backend as K
-from keras.callbacks import Callback
-from keras import initializers as initializers, regularizers, constraints
-from keras.engine.topology import Layer
+import pandas as pd
+import numpy as np
+
 from keras.preprocessing.text import Tokenizer
+from keras.engine.topology import Layer
+from keras import initializers as initializers, regularizers, constraints
+from keras.callbacks import Callback
+from keras.layers import concatenate,GlobalMaxPooling1D,GlobalAveragePooling1D,SpatialDropout1D,Embedding, Input, Dense, LSTM, GRU, Bidirectional, TimeDistributed
+from keras import backend as K
+from keras.models import Model
+import keras.layers as layers
+from sklearn.metrics import roc_auc_score
+from keras.preprocessing import sequence
+from keras.models import Sequential
+from keras.layers import Dense,Dropout,Embedding,LSTM,Bidirectional,Layer
+from keras.datasets import imdb
+from keras.preprocessing.text import Tokenizer
+from keras.preprocessing.sequence import pad_sequences
+from keras.layers import *
+from keras.models import Model
+from keras import initializers, regularizers, constraints, optimizers, layers
+from keras.callbacks import EarlyStopping, ModelCheckpoint
 import numpy as np
 import pandas as pd
 import random
@@ -85,26 +94,44 @@ x_test = np.array(x_test)
 y_test = np.array(y_test)
 
 
+def softmax(x, axis=1):
+    """Softmax activation function."""
+    ndim = K.ndim(x)
+    if ndim == 2:
+        return K.softmax(x)
+    elif ndim > 2:
+        e = K.exp(x - K.max(x, axis=axis, keepdims=True))
+        s = K.sum(e, axis=axis, keepdims=True)
+        return e / s
+    else:
+        raise ValueError('Cannot apply softmax to a tensor that is 1D')
+        
+def one_step_attention(a):
+    e = densor1(a)
+    energies = densor2(e)
+    alphas = activator(energies)
+    context = dotor([alphas,a])
+    return context
+
 def get_model():
-    embed_size = 256
-    inp = Input(shape=(400, ))
-    x = Embedding(input_dim=len(dataset1.w2i), output_dim=embed_size,)(inp)
-    print(x)
-    x = SpatialDropout1D(0.2)(x)
-    x1 = Bidirectional(GRU(100, return_sequences=True))(x)
-    x2 = Bidirectional(GRU(100, return_sequences=True))(x1)
-    x3 = Bidirectional(GRU(100, return_sequences=True))(x2)
+    densor1 = Dense(32, activation = "tanh")
+    densor2 = Dense(1, activation = "relu")
+    activator = Activation(softmax, name='attention_weights') # We are using a custom softmax(axis = 1) loaded in this notebook
+    dotor = Dot(axes = 1)
 
-    avg_pool = GlobalAveragePooling1D()(x3)
-    max_pool = GlobalMaxPooling1D()(x3)
-    conc = concatenate([avg_pool, max_pool])
-    outp = Dense(80, activation="relu")(conc)
 
-    model = Model(inputs=inp, outputs=outp)
-    model.compile(loss='binary_crossentropy',
-                  optimizer='adam',
-                  metrics=['accuracy'])
-
+    inp = Input(shape=(400,))
+    x = Embedding(50000, 256)(inp)
+    x = Bidirectional(CuDNNGRU(64, return_sequences= True))(x)
+    x = Dropout(0.25)(x)
+    context = one_step_attention(x)
+    context = Flatten()(context)
+    merged = Dropout(0.25)(context)
+    merged = BatchNormalization()(merged)
+    preds = Dense(80, activation='sigmoid')(merged)
+    model = Model(inputs = [inp], outputs= preds)
+    model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+    print(model.summary())
     return model
 
 
