@@ -85,7 +85,7 @@ pad_comments = pad_sequences(
 
 labels = [x[2].flatten().tolist() for x in dataset1._raw_data]
 x_train, y_train, x_test, y_test = split_dataset(
-    pad_comments[:10000], labels, 0.8)
+    pad_comments[:100000], labels, 0.8)
 
 
 x_train = np.array(x_train)
@@ -106,6 +106,11 @@ def softmax(x, axis=1):
     else:
         raise ValueError('Cannot apply softmax to a tensor that is 1D')
         
+        
+densor1 = Dense(32, activation = "tanh")
+densor2 = Dense(1, activation = "relu")
+activator = Activation(softmax, name='attention_weights') # We are using a custom softmax(axis = 1) loaded in this notebook
+dotor = Dot(axes = 1)
 def one_step_attention(a):
     e = densor1(a)
     energies = densor2(e)
@@ -114,21 +119,19 @@ def one_step_attention(a):
     return context
 
 def get_model():
-    densor1 = Dense(32, activation = "tanh")
-    densor2 = Dense(1, activation = "relu")
-    activator = Activation(softmax, name='attention_weights') # We are using a custom softmax(axis = 1) loaded in this notebook
-    dotor = Dot(axes = 1)
-
 
     inp = Input(shape=(400,))
     x = Embedding(50000, 256)(inp)
-    x = Bidirectional(CuDNNGRU(64, return_sequences= True))(x)
-    x = Dropout(0.25)(x)
+    x1 = Bidirectional(CuDNNGRU(100, return_sequences= True))(x)
+    x2 = Bidirectional(CuDNNGRU(100, return_sequences= True))(x1)
+    x3 = Bidirectional(CuDNNGRU(100, return_sequences= True))(x2)
+    conc = concatenate([x1,x2,x3])
+    x = Dropout(0.25)(conc)
     context = one_step_attention(x)
     context = Flatten()(context)
     merged = Dropout(0.25)(context)
     merged = BatchNormalization()(merged)
-    preds = Dense(80, activation='sigmoid')(merged)
+    preds = Dense(80, activation='relu')(merged)
     model = Model(inputs = [inp], outputs= preds)
     model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
     print(model.summary())
@@ -138,4 +141,4 @@ def get_model():
 model = get_model()
 
 print(model.summary())
-history = model.fit(x_train, y_train, epochs=5，validation_data=(x_test, y_test), verbose=1, batch_size=batch_size)
+history = model.fit(x_train, y_train, epochs=5, validation_data=(x_test,y_test), verbose=1, batch_size=batch_size)
