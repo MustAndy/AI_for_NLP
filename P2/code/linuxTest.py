@@ -5,14 +5,14 @@ from keras.preprocessing.text import Tokenizer
 from keras.engine.topology import Layer
 from keras import initializers as initializers, regularizers, constraints
 from keras.callbacks import Callback
-from keras.layers import concatenate,GlobalMaxPooling1D,GlobalAveragePooling1D,SpatialDropout1D,Embedding, Input, Dense, LSTM, GRU, Bidirectional, TimeDistributed
+from keras.layers import concatenate, GlobalMaxPooling1D, GlobalAveragePooling1D, SpatialDropout1D, Embedding, Input, Dense, LSTM, GRU, Bidirectional, TimeDistributed
 from keras import backend as K
 from keras.models import Model
 import keras.layers as layers
 from sklearn.metrics import roc_auc_score
 from keras.preprocessing import sequence
 from keras.models import Sequential
-from keras.layers import Dense,Dropout,Embedding,LSTM,Bidirectional,Layer
+from keras.layers import Dense, Dropout, Embedding, LSTM, Bidirectional, Layer
 from keras.datasets import imdb
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
@@ -85,13 +85,44 @@ pad_comments = pad_sequences(
 
 labels = [x[2].flatten().tolist() for x in dataset1._raw_data]
 x_train, y_train, x_test, y_test = split_dataset(
-    pad_comments[:100000], labels, 0.8)
+    pad_comments[:20000], labels, 0.8)
 
 
 x_train = np.array(x_train)
 y_train = np.array(y_train)
 x_test = np.array(x_test)
 y_test = np.array(y_test)
+
+
+def f1(y_true, y_pred):
+    def recall(y_true, y_pred):
+        """Recall metric.
+
+        Only computes a batch-wise average of recall.
+
+        Computes the recall, a metric for multi-label classification of
+        how many relevant items are selected.
+        """
+        true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
+        possible_positives = K.sum(K.round(K.clip(y_true, 0, 1)))
+        recall = true_positives / (possible_positives + K.epsilon())
+        return recall
+
+    def precision(y_true, y_pred):
+        """Precision metric.
+
+        Only computes a batch-wise average of precision.
+
+        Computes the precision, a metric for multi-label classification of
+        how many selected items are relevant.
+        """
+        true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
+        predicted_positives = K.sum(K.round(K.clip(y_pred, 0, 1)))
+        precision = true_positives / (predicted_positives + K.epsilon())
+        return precision
+    precision = precision(y_true, y_pred)
+    recall = recall(y_true, y_pred)
+    return 2*((precision*recall)/(precision+recall+K.epsilon()))
 
 
 def softmax(x, axis=1):
@@ -105,40 +136,57 @@ def softmax(x, axis=1):
         return e / s
     else:
         raise ValueError('Cannot apply softmax to a tensor that is 1D')
-        
-        
-densor1 = Dense(32, activation = "tanh")
-densor2 = Dense(1, activation = "relu")
-activator = Activation(softmax, name='attention_weights') # We are using a custom softmax(axis = 1) loaded in this notebook
-dotor = Dot(axes = 1)
+
+
+densor1 = Dense(32, activation="tanh")
+densor2 = Dense(2, activation="relu")
+# We are using a custom softmax(axis = 1) loaded in this notebook
+activator = Activation(softmax, name='attention_weights')
+dotor = Dot(axes=1)
+
+
 def one_step_attention(a):
     e = densor1(a)
     energies = densor2(e)
     alphas = activator(energies)
-    context = dotor([alphas,a])
+    context = dotor([alphas, a])
     return context
+
 
 def get_model():
 
     inp = Input(shape=(400,))
     x = Embedding(50000, 256)(inp)
-    x1 = Bidirectional(CuDNNGRU(100, return_sequences= True))(x)
-    x2 = Bidirectional(CuDNNGRU(100, return_sequences= True))(x1)
-    x3 = Bidirectional(CuDNNGRU(100, return_sequences= True))(x2)
-    conc = concatenate([x1,x2,x3])
-    x = Dropout(0.25)(conc)
+    x1 = Bidirectional(CuDNNGRU(100, return_sequences=True))(x)
+    x2 = Bidirectional(CuDNNGRU(100, return_sequences=True))(x1)
+    x3 = Bidirectional(CuDNNGRU(100, return_sequences=True))(x2)
+    conc = concatenate([x1, x2, x3])
+    x = Dropout(0.5)(conc)
     context = one_step_attention(x)
     context = Flatten()(context)
-    merged = Dropout(0.25)(context)
-    merged = BatchNormalization()(merged)
+    merged = Dropout(0.5)(context)
     preds = Dense(80, activation='relu')(merged)
-    model = Model(inputs = [inp], outputs= preds)
-    model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+    model = Model(inputs=[inp], outputs=preds)
+    model.compile(loss='binary_crossentropy', optimizer='adam', metrics=[f1])
     print(model.summary())
     return model
 
 
-model = get_model()
+def get_model1():
+
+    inp = Input(shape=(400,))
+    x = Embedding(50000, 256)(inp)
+    x1 = Bidirectional(CuDNNGRU(100, return_sequences=False))(x)
+
+    preds = Dense(80, activation='relu')(x1)
+    model = Model(inputs=[inp], outputs=preds)
+    model.compile(loss='binary_crossentropy', optimizer='adam', metrics=[f1])
+    print(model.summary())
+    return model
+
+
+model = get_model1()
 
 print(model.summary())
-history = model.fit(x_train, y_train, epochs=5, validation_data=(x_test,y_test), verbose=1, batch_size=batch_size)
+history = model.fit(x_train, y_train, epochs=2,
+                    validation_data=(x_test, y_test), verbose=1)
