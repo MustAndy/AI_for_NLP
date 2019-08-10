@@ -143,7 +143,17 @@ class DataSet(object):
         self.items = []
         self._preprocess()
 
+    def get_shuffle_row(self, shuffle=True):
+        if shuffle:
+            idxs = self._shuffle()
+        else:
+            idxs = range(self.data_size)
 
+        batch = []
+        for i in idxs:
+            item = self._raw_data[i]
+            batch.append(item)
+        return batch
     def get_label(self, labels, l2i, normalize=False):
         one_hot_labels = np.zeros(len(l2i), dtype=np.float32)
         for n in labels:
@@ -191,15 +201,28 @@ class DataSet(object):
         sort_idx = np.concatenate((ck_idx[0], sort_idx))
         return iter(sort_idx)
 
-
+    def pad_sequences(self,comment_to_id,maxlen,padding,truncating):
+        features = np.zeros((len(comment_to_id), maxlen), dtype=int)
+        for i,comment in enumerate(comment_to_id):
+            if len(comment) <= maxlen and padding == 'pre':
+                features[i, -len(comment):] = np.array(comment)[:maxlen]
+            if len(comment) <= maxlen and padding == 'post':
+                features[i, :len(comment)] = np.array(comment)[:maxlen]
+            if len(comment) > maxlen and truncating == 'post':
+                features[i, :] = np.array(comment)[:maxlen]
+            if len(comment) > maxlen and truncating == 'pre':
+                features[i, :] = np.array(comment)[len(comment)-maxlen:]           
+        return features
+    
     def process_batch(self, batch):
         contents = [item.content for item in batch]
         lengths = [item.length for item in batch]
         contents = _padding(contents, max(lengths))
         lengths = np.asarray(lengths)
-        targets = np.asarray([item.labels for item in batch])
+        contents = self.pad_sequences(contents,maxlen=500,padding='post',truncating='post')
+        targets = np.asarray([item.labels.flatten() for item in batch])
         ids = [item.id for item in batch]
-        return contents, lengths, targets, ids
+        return contents, targets
 
     def get_next(self, shuffle=True):
         if shuffle:
